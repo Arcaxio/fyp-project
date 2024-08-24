@@ -159,6 +159,19 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
           }
         ],
       });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: 'MQTTDev3',
+            value: 'OFF',
+            headers: {
+              device_id: 'MQTTDev3',
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
     } else if (parsedValue && parsedValue.lights === 'ON') {
       await producer.send({
         topic: 'hono.command.MQTT_ENV',
@@ -168,6 +181,19 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
             value: 'ON',
             headers: {
               device_id: 'MQTTDev1',
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: 'MQTTDev3',
+            value: 'ON',
+            headers: {
+              device_id: 'MQTTDev3',
               subject: 'setLight',
             },
           }
