@@ -15,7 +15,7 @@ const eventTopic = `hono.event.${tenantId}`;
 
 // Init Kafka
 const kafka = new Kafka({
-  clientId: 'hono-server',
+  clientId: 'hono-client',
   brokers: ['146.190.203.23:9094'],
   ssl: {
     rejectUnauthorized: false,
