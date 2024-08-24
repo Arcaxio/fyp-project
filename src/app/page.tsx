@@ -1,3 +1,5 @@
+import LogComponent from "./LogComponent";
+
 interface Message {
   offset: number;
   value: Buffer; // Assuming message.value is a Buffer
@@ -11,6 +13,7 @@ const deviceId = '24a00c96-7650-48d8-b8e9-8334e427b757';
 const device2Id = '05642c84-06e0-4e69-84bc-a6439797a3ed';
 const commandTopic = `hono.command.${tenantId}`;
 const eventTopic = `hono.event.${tenantId}`;
+const logMessage = {};
 
 // Init Kafka
 const kafka = new Kafka({
@@ -69,6 +72,8 @@ const run = async () => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message } : { topic: string, partition: string, message: Message }) => {
       const messageValue = message.value ? message.value.toString() : null;
+      const temp = {topic, partition, value: messageValue}
+      Object.assign(temp, logMessage)
       
       console.log({
         topic,
@@ -132,12 +137,11 @@ const handleMessage = async (topic: string, messageValue: string) => {
   }
 }
 
-
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center justify-between p-12">
       <div className="w-full max-w-5xl text-2xl lg:flex justify-center">
-        <p className="">TEST</p>
+        {/* <LogComponent props={{producer, commandTopic, deviceId}} /> */}
       </div>
     </main>
   );
