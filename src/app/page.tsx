@@ -1,4 +1,4 @@
-import LogComponent from "./LogComponent";
+import { OnCommandComponent, OffCommandComponent } from "./ButtonComponent";
 
 interface Message {
   offset: number;
@@ -137,11 +137,46 @@ const handleMessage = async (topic: string, messageValue: string) => {
   }
 }
 
+async function buttonOnCommand() {
+  'use server'
+  await producer.send({
+    topic: commandTopic,
+    messages: [
+      { 
+        key: deviceId,
+        value: 'ON',
+        headers: {
+          device_id: deviceId,
+          subject: 'setLight',
+        },
+      }
+    ],
+  })
+}
+
+async function buttonOffCommand() {
+  'use server'
+  await producer.send({
+    topic: commandTopic,
+    messages: [
+      { 
+        key: deviceId,
+        value: 'OFF',
+        headers: {
+          device_id: deviceId,
+          subject: 'setLight',
+        },
+      }
+    ],
+  })
+}
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-12">
       <div className="w-full max-w-5xl text-2xl lg:flex justify-center">
-        {/* <LogComponent props={{producer, commandTopic, deviceId}} /> */}
+        <OnCommandComponent commandOnAction={buttonOnCommand} />
+        <OffCommandComponent commandOffAction={buttonOffCommand} />
       </div>
     </main>
   );
