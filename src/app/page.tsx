@@ -10,14 +10,12 @@ const fs = require('fs')
 
 const tenantId = '6ecfd23a-e229-4ce1-bf6d-5ebb92e5b8d8';
 const deviceId = '24a00c96-7650-48d8-b8e9-8334e427b757';
-const device2Id = '05642c84-06e0-4e69-84bc-a6439797a3ed';
 const commandTopic = `hono.command.${tenantId}`;
 const eventTopic = `hono.event.${tenantId}`;
-const logMessage = {};
 
 // Init Kafka
 const kafka = new Kafka({
-  clientId: 'hono-client',
+  clientId: 'hono-server',
   brokers: ['146.190.203.23:9094'],
   ssl: {
     rejectUnauthorized: false,
@@ -32,7 +30,7 @@ const kafka = new Kafka({
 
 // Define producer and consumer
 const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
-const consumer = kafka.consumer({ groupId: 'test-group' })
+const consumer = kafka.consumer({ groupId: 'test-group-alpha' })
 
 // Runs
 const run = async () => {
@@ -67,13 +65,11 @@ const run = async () => {
   
   // Consuming messages
   await consumer.connect()
-  await consumer.subscribe({ topics: [commandTopic, eventTopic] })
+  await consumer.subscribe({ topics: [commandTopic, eventTopic, 'hono.telemetry.MQTT_ENV', 'hono.command.MQTT_ENV'], fromBeginning: true })
   
   await consumer.run({
     eachMessage: async ({ topic, partition, message } : { topic: string, partition: string, message: Message }) => {
       const messageValue = message.value ? message.value.toString() : null;
-      const temp = {topic, partition, value: messageValue}
-      Object.assign(temp, logMessage)
       
       console.log({
         topic,
@@ -84,6 +80,7 @@ const run = async () => {
   
       if (messageValue) {
         await handleMessage(topic, messageValue);
+        await handleMessageMQTT(topic, messageValue);
       } else {
         console.warn(`Received a message with null value at offset ${message.offset}`);
       }
@@ -128,6 +125,49 @@ const handleMessage = async (topic: string, messageValue: string) => {
             value: 'ON',
             headers: {
               device_id: deviceId,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+    }
+  }
+}
+
+const handleMessageMQTT = async (topic: string, messageValue: string) => {
+  if (topic === 'hono.telemetry.MQTT_ENV') {
+    let parsedValue;
+
+    try {
+      parsedValue = JSON.parse(messageValue);
+    } catch (error) {
+      console.error(`Failed to parse JSON:`);
+      return; // Exit the function if parsing fails
+    }
+
+    if (parsedValue && parsedValue.lights === 'OFF') {
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: 'MQTTDev1',
+            value: 'OFF',
+            headers: {
+              device_id: 'MQTTDev1',
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+    } else if (parsedValue && parsedValue.lights === 'ON') {
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: 'MQTTDev1',
+            value: 'ON',
+            headers: {
+              device_id: 'MQTTDev1',
               subject: 'setLight',
             },
           }
