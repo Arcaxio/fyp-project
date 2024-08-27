@@ -75,7 +75,7 @@ const run = async () => {
       });
   
       if (messageValue) {
-        await HTTP1_to_MQTT5(topic, messageValue);
+        // await HTTP1_to_MQTT5(topic, messageValue);
         await MQTT2_to_MQTT13(topic, messageValue);
         await HTTP1_to_MQTT_All(topic, messageValue);
       } else {
