@@ -75,8 +75,9 @@ const run = async () => {
       });
   
       if (messageValue) {
-        await HTTP_to_MQTT(topic, messageValue);
-        await MQTT_to_MQTT(topic, messageValue);
+        await HTTP1_to_MQTT5(topic, messageValue);
+        await MQTT2_to_MQTT13(topic, messageValue);
+        await HTTP1_to_MQTT_All(topic, messageValue);
       } else {
         console.warn(`Received a message with null value at offset ${message.offset}`);
       }
@@ -87,14 +88,14 @@ const run = async () => {
 run().catch(console.error)
 
 // Function to handle the message logic
-const HTTP_to_MQTT = async (topic: string, messageValue: string) => {
+const HTTP1_to_MQTT5 = async (topic: string, messageValue: string) => {
   if (topic === eventTopicHTTP) {
     let parsedValue;
 
     try {
       parsedValue = JSON.parse(messageValue);
     } catch (error) {
-      console.error(`Failed to parse JSON 2:`);
+      console.error(`Failed to parse JSON 1:`);
       return; // Exit the function if parsing fails
     }
 
@@ -130,14 +131,14 @@ const HTTP_to_MQTT = async (topic: string, messageValue: string) => {
   }
 }
 
-const MQTT_to_MQTT = async (topic: string, messageValue: string) => {
+const MQTT2_to_MQTT13 = async (topic: string, messageValue: string) => {
   if (topic === telemetryTopicMQTT || eventTopicMQTT) {
     let parsedValue;
 
     try {
       parsedValue = JSON.parse(messageValue);
     } catch (error) {
-      console.error(`Failed to parse JSON:`);
+      console.error(`Failed to parse JSON 2:`);
       return; // Exit the function if parsing fails
     }
 
@@ -190,6 +191,101 @@ const MQTT_to_MQTT = async (topic: string, messageValue: string) => {
             value: 'ON',
             headers: {
               device_id: deviceId_MQTT3,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+    }
+  }
+}
+
+const HTTP1_to_MQTT_All = async (topic: string, messageValue: string) => {
+  if (topic === telemetryTopicMQTT || eventTopicMQTT) {
+    let parsedValue;
+
+    try {
+      parsedValue = JSON.parse(messageValue);
+    } catch (error) {
+      console.error(`Failed to parse JSON 2:`);
+      return; // Exit the function if parsing fails
+    }
+
+    if (parsedValue && parsedValue.lights === 'OFF') {
+      await producer.send({
+        topic: commandTopicMQTT,
+        messages: [
+          { 
+            key: deviceId_MQTT1,
+            value: 'OFF',
+            headers: {
+              device_id: deviceId_MQTT1,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: deviceId_MQTT3,
+            value: 'OFF',
+            headers: {
+              device_id: deviceId_MQTT3,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: deviceId_MQTT5,
+            value: 'OFF',
+            headers: {
+              device_id: deviceId_MQTT5,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+    } else if (parsedValue && parsedValue.lights === 'ON') {
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: deviceId_MQTT1,
+            value: 'ON',
+            headers: {
+              device_id: deviceId_MQTT1,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: deviceId_MQTT3,
+            value: 'ON',
+            headers: {
+              device_id: deviceId_MQTT3,
+              subject: 'setLight',
+            },
+          }
+        ],
+      });
+      await producer.send({
+        topic: 'hono.command.MQTT_ENV',
+        messages: [
+          { 
+            key: deviceId_MQTT5,
+            value: 'OFF',
+            headers: {
+              device_id: deviceId_MQTT5,
               subject: 'setLight',
             },
           }
