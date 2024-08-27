@@ -11,9 +11,9 @@ const fs = require('fs')
 const tenantIdMQTT = 'MQTT_ENV';
 const tenantIdHTTP = 'HTTP_ENV';
 
-const deviceId_MQTT1 = 'MQTTDev11';
-const deviceId_MQTT3 = 'MQTTDev33';
-const deviceId_MQTT5 = 'MQTTDev55';
+const deviceId_MQTT1 = 'MQTTDev1';
+const deviceId_MQTT3 = 'MQTTDev3';
+const deviceId_MQTT5 = 'MQTTDev5';
 
 const commandTopicMQTT = `hono.command.${tenantIdMQTT}`;
 const eventTopicMQTT = `hono.event.${tenantIdMQTT}`;
@@ -24,7 +24,7 @@ const eventTopicHTTP = `hono.event.${tenantIdHTTP}`;
 
 // Init Kafka
 const kafka = new Kafka({
-  clientId: 'hono-client',
+  clientId: 'hono-server',
   brokers: ['146.190.203.23:9094'],
   ssl: {
     rejectUnauthorized: false,
@@ -39,7 +39,7 @@ const kafka = new Kafka({
 
 // Define producer and consumer
 const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
-const consumer = kafka.consumer({ groupId: 'test-group-beta' })
+const consumer = kafka.consumer({ groupId: 'test-group-alpha' })
 
 // Runs
 const run = async () => {
@@ -94,7 +94,7 @@ const HTTP_to_MQTT = async (topic: string, messageValue: string) => {
     try {
       parsedValue = JSON.parse(messageValue);
     } catch (error) {
-      console.error(`Failed to parse JSON:`);
+      console.error(`Failed to parse JSON 2:`);
       return; // Exit the function if parsing fails
     }
 
