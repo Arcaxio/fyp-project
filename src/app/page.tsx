@@ -283,7 +283,7 @@ const HTTP1_to_MQTT_All = async (topic: string, messageValue: string) => {
         messages: [
           { 
             key: deviceId_MQTT5,
-            value: 'OFF',
+            value: 'ON',
             headers: {
               device_id: deviceId_MQTT5,
               subject: 'setLight',
