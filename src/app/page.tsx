@@ -8,10 +8,19 @@ interface Message {
 const { Kafka, Partitioners } = require('kafkajs')
 const fs = require('fs')
 
-const tenantId = '6ecfd23a-e229-4ce1-bf6d-5ebb92e5b8d8';
-const deviceId = '24a00c96-7650-48d8-b8e9-8334e427b757';
-const commandTopic = `hono.command.${tenantId}`;
-const eventTopic = `hono.event.${tenantId}`;
+const tenantIdMQTT = 'MQTT_ENV';
+const tenantIdHTTP = 'HTTP_ENV';
+
+const deviceId_MQTT1 = 'MQTTDev11';
+const deviceId_MQTT3 = 'MQTTDev33';
+const deviceId_MQTT5 = 'MQTTDev55';
+
+const commandTopicMQTT = `hono.command.${tenantIdMQTT}`;
+const eventTopicMQTT = `hono.event.${tenantIdMQTT}`;
+const telemetryTopicMQTT = `hono.telemetry.${tenantIdMQTT}`;
+
+const commandTopicHTTP = `hono.command.${tenantIdHTTP}`;
+const eventTopicHTTP = `hono.event.${tenantIdHTTP}`;
 
 // Init Kafka
 const kafka = new Kafka({
@@ -30,42 +39,29 @@ const kafka = new Kafka({
 
 // Define producer and consumer
 const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
-const consumer = kafka.consumer({ groupId: 'test-group-alpha' })
+const consumer = kafka.consumer({ groupId: 'test-group-beta' })
 
 // Runs
 const run = async () => {
   // Producing an initial message
   await producer.connect()
   await producer.send({
-    topic: commandTopic,
+    topic: commandTopicMQTT,
     messages: [
       { 
-        key: deviceId,
+        key: deviceId_MQTT5,
         value: 'ON',
         headers: {
-          device_id: deviceId,
+          device_id: deviceId_MQTT5,
           subject: 'setLight',
         },
       }
     ],
   })
-  // await producer.send({
-  //   topic: eventTopic,
-  //   messages: [
-  //     { 
-  //       key: device2Id,
-  //       value: '{"lights": "ON"}',
-  //       // headers: {
-  //       //   device_id: deviceId,
-  //       //   subject: 'setLight',
-  //       // },
-  //     }
-  //   ],
-  // })
   
   // Consuming messages
   await consumer.connect()
-  await consumer.subscribe({ topics: [commandTopic, eventTopic, 'hono.telemetry.MQTT_ENV', 'hono.command.MQTT_ENV'], fromBeginning: true })
+  await consumer.subscribe({ topics: [commandTopicMQTT, eventTopicMQTT, telemetryTopicMQTT, commandTopicHTTP, eventTopicHTTP], fromBeginning: true })
   
   await consumer.run({
     eachMessage: async ({ topic, partition, message } : { topic: string, partition: string, message: Message }) => {
@@ -79,8 +75,8 @@ const run = async () => {
       });
   
       if (messageValue) {
-        await handleMessage(topic, messageValue);
-        await handleMessageMQTT(topic, messageValue);
+        await HTTP_to_MQTT(topic, messageValue);
+        await MQTT_to_MQTT(topic, messageValue);
       } else {
         console.warn(`Received a message with null value at offset ${message.offset}`);
       }
@@ -91,8 +87,8 @@ const run = async () => {
 run().catch(console.error)
 
 // Function to handle the message logic
-const handleMessage = async (topic: string, messageValue: string) => {
-  if (topic === eventTopic) {
+const HTTP_to_MQTT = async (topic: string, messageValue: string) => {
+  if (topic === eventTopicHTTP) {
     let parsedValue;
 
     try {
@@ -104,13 +100,13 @@ const handleMessage = async (topic: string, messageValue: string) => {
 
     if (parsedValue && parsedValue.lights === 'OFF') {
       await producer.send({
-        topic: commandTopic,
+        topic: commandTopicMQTT,
         messages: [
           { 
-            key: deviceId,
+            key: deviceId_MQTT5,
             value: 'OFF',
             headers: {
-              device_id: deviceId,
+              device_id: deviceId_MQTT5,
               subject: 'setLight',
             },
           }
@@ -118,13 +114,13 @@ const handleMessage = async (topic: string, messageValue: string) => {
       });
     } else if (parsedValue && parsedValue.lights === 'ON') {
       await producer.send({
-        topic: commandTopic,
+        topic: commandTopicMQTT,
         messages: [
           { 
-            key: deviceId,
+            key: deviceId_MQTT5,
             value: 'ON',
             headers: {
-              device_id: deviceId,
+              device_id: deviceId_MQTT5,
               subject: 'setLight',
             },
           }
@@ -134,8 +130,8 @@ const handleMessage = async (topic: string, messageValue: string) => {
   }
 }
 
-const handleMessageMQTT = async (topic: string, messageValue: string) => {
-  if (topic === 'hono.telemetry.MQTT_ENV') {
+const MQTT_to_MQTT = async (topic: string, messageValue: string) => {
+  if (topic === telemetryTopicMQTT || eventTopicMQTT) {
     let parsedValue;
 
     try {
@@ -147,13 +143,13 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
 
     if (parsedValue && parsedValue.lights === 'OFF') {
       await producer.send({
-        topic: 'hono.command.MQTT_ENV',
+        topic: commandTopicMQTT,
         messages: [
           { 
-            key: 'MQTTDev1',
+            key: deviceId_MQTT1,
             value: 'OFF',
             headers: {
-              device_id: 'MQTTDev1',
+              device_id: deviceId_MQTT1,
               subject: 'setLight',
             },
           }
@@ -163,10 +159,10 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
         topic: 'hono.command.MQTT_ENV',
         messages: [
           { 
-            key: 'MQTTDev3',
+            key: deviceId_MQTT3,
             value: 'OFF',
             headers: {
-              device_id: 'MQTTDev3',
+              device_id: deviceId_MQTT3,
               subject: 'setLight',
             },
           }
@@ -177,10 +173,10 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
         topic: 'hono.command.MQTT_ENV',
         messages: [
           { 
-            key: 'MQTTDev1',
+            key: deviceId_MQTT1,
             value: 'ON',
             headers: {
-              device_id: 'MQTTDev1',
+              device_id: deviceId_MQTT1,
               subject: 'setLight',
             },
           }
@@ -190,10 +186,10 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
         topic: 'hono.command.MQTT_ENV',
         messages: [
           { 
-            key: 'MQTTDev3',
+            key: deviceId_MQTT3,
             value: 'ON',
             headers: {
-              device_id: 'MQTTDev3',
+              device_id: deviceId_MQTT3,
               subject: 'setLight',
             },
           }
@@ -206,13 +202,13 @@ const handleMessageMQTT = async (topic: string, messageValue: string) => {
 async function buttonOnCommand() {
   'use server'
   await producer.send({
-    topic: commandTopic,
+    topic: commandTopicMQTT,
     messages: [
       { 
-        key: deviceId,
+        key: deviceId_MQTT5,
         value: 'ON',
         headers: {
-          device_id: deviceId,
+          device_id: deviceId_MQTT5,
           subject: 'setLight',
         },
       }
@@ -223,13 +219,13 @@ async function buttonOnCommand() {
 async function buttonOffCommand() {
   'use server'
   await producer.send({
-    topic: commandTopic,
+    topic: commandTopicMQTT,
     messages: [
       { 
-        key: deviceId,
+        key: deviceId_MQTT5,
         value: 'OFF',
         headers: {
-          device_id: deviceId,
+          device_id: deviceId_MQTT5,
           subject: 'setLight',
         },
       }
